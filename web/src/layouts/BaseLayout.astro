@@ -1,0 +1,59 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title?: string;
+  active?: string;
+}
+
+const { title = "Honeyshop", active = "overview" } = Astro.props;
+
+const links = [
+  { href: "/", id: "overview", label: "Overview" },
+  { href: "/live", id: "live", label: "Live Feed" },
+  { href: "/services", id: "services", label: "Services" },
+  { href: "/alerts", id: "alerts", label: "Alerts" },
+  { href: "/settings", id: "settings", label: "Settings" },
+];
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="Honeyshop defensive honeypot framework" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Honeyshop</title>
+  </head>
+  <body>
+    <div class="shell">
+      <aside class="sidebar">
+        <a class="brand" href="/">
+          <div class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none">
+              <path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z" stroke="#F5C16C" stroke-width="1.5"/>
+              <path d="M9 11h6M10 14h4M11 8h2" stroke="#D4922A" stroke-width="1.2" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="brand-text">
+            <strong>Honeyshop</strong>
+            <span>Defensive framework</span>
+          </div>
+        </a>
+        <nav class="nav">
+          {links.map((l) => (
+            <a href={l.href} class={active === l.id ? "active" : undefined}>{l.label}</a>
+          ))}
+        </nav>
+        <div class="sidebar-foot">
+          <div>JSONL · ELK · Sigma ready</div>
+          <div class="tagline">Detect · Deceive · Defend</div>
+        </div>
+      </aside>
+      <main class="main">
+        <slot />
+      </main>
+    </div>
+  </body>
+</html>
