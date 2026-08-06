@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "honeyshop"
+version = "0.1.0"
+description = "Modular defensive honeypot framework"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Honeyshop Contributors"}
+]
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "rich>=13.0",
+]
+
+[project.scripts]
+honeyshop = "honeyshop.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["honeyshop*"]
