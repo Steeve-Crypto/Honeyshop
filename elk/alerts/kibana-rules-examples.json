@@ -1,0 +1,59 @@
+{
+  "comment": "Example Kibana / Elasticsearch rule definitions for Honeyshop. These are templates — create equivalent rules via the Kibana UI (Stack Management → Rules) or convert for Elastic Security Detection Engine.",
+  "rules": [
+    {
+      "name": "Honeyshop - High Volume Source IP",
+      "rule_type": "threshold",
+      "index": ["honeyshop-*"],
+      "description": "Alert when a single source IP generates >= 20 interactions in 5 minutes",
+      "query": "honeypot.service: *",
+      "language": "kuery",
+      "group_by": ["source.ip"],
+      "threshold": 20,
+      "time_window": "5m",
+      "schedule": "1m",
+      "severity": "medium",
+      "tags": ["honeyshop", "bruteforce", "scanning"]
+    },
+    {
+      "name": "Honeyshop - Login Attempts",
+      "rule_type": "query",
+      "index": ["honeyshop-*"],
+      "description": "Alert on login_attempt events or concentrated SSH activity",
+      "query": "honeypot.event: \"login_attempt\" or (honeypot.service: \"ssh\" and honeypot.event: *)",
+      "language": "kuery",
+      "threshold": 5,
+      "time_window": "10m",
+      "schedule": "2m",
+      "severity": "medium",
+      "tags": ["honeyshop", "credential_access"]
+    },
+    {
+      "name": "Honeyshop - Suspicious Payload",
+      "rule_type": "query",
+      "index": ["honeyshop-*"],
+      "description": "Detect common exploit / malware payload patterns in captured data",
+      "query": "honeypot.payload: (*wget* or *curl* or *\"/bin/bash\"* or *\"/bin/sh\"* or *\"nc -e\"* or *\"python -c\"* or *base64* or *\"chmod +x\"* or *Mirai* or *BusyBox*)",
+      "language": "kuery",
+      "threshold": 1,
+      "time_window": "5m",
+      "schedule": "1m",
+      "severity": "high",
+      "tags": ["honeyshop", "execution", "malware"]
+    },
+    {
+      "name": "Honeyshop - Service Spike",
+      "rule_type": "threshold",
+      "index": ["honeyshop-*"],
+      "description": "Alert when any single honeypot service receives >= 50 hits in 5 minutes",
+      "query": "honeypot.service: *",
+      "language": "kuery",
+      "group_by": ["honeypot.service"],
+      "threshold": 50,
+      "time_window": "5m",
+      "schedule": "1m",
+      "severity": "low",
+      "tags": ["honeyshop", "volume"]
+    }
+  ]
+}
