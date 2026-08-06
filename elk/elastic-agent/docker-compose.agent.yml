@@ -1,0 +1,27 @@
+# Optional: run Elastic Agent next to Honeyshop to ship JSONL logs.
+# This is a TEMPLATE — you must supply real Fleet URL + enrollment token.
+#
+# Usage (after setting environment variables):
+#   export FLEET_URL=https://your-fleet-server:8220
+#   export FLEET_ENROLLMENT_TOKEN=your_token
+#   docker compose -f docker-compose.yml -f elk/elastic-agent/docker-compose.agent.yml up -d
+#
+# Prefer Elastic Cloud Fleet when possible.
+
+services:
+  elastic-agent:
+    image: docker.elastic.co/beats/elastic-agent:8.15.0
+    container_name: honeyshop-elastic-agent
+    hostname: honeyshop-agent
+    user: root
+    restart: unless-stopped
+    volumes:
+      - ./logs:/var/log/honeyshop:ro
+    environment:
+      - FLEET_ENROLL=1
+      - FLEET_URL=${FLEET_URL}
+      - FLEET_ENROLLMENT_TOKEN=${FLEET_ENROLLMENT_TOKEN}
+      # Optional: insecure for lab only
+      # - FLEET_INSECURE=true
+    depends_on:
+      - honeyshop
