@@ -1,0 +1,23 @@
+title: Honeyshop High Volume Source IP
+id: c3d4e5f6-a7b8-9012-cdef-123456789012
+status: experimental
+description: Detects a single source IP generating a high number of interactions against Honeyshop in a short time window.
+references:
+  - https://github.com/Steeve-Crypto/Honeyshop
+author: Honeyshop
+date: 2026/08/06
+logsource:
+  product: honeyshop
+detection:
+  selection:
+    source.ip: '*'
+  condition: selection
+falsepositives:
+  - Aggressive but legitimate research scanners
+  - Load testing of the honeypot
+level: high
+tags:
+  - attack.discovery
+  - attack.t1046
+  - honeypot
+# Note: Threshold logic (e.g. > 20 events in 5m) is applied in Kibana/ElastAlert, not pure Sigma.
