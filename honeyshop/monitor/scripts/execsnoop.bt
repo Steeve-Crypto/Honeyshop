@@ -1,0 +1,6 @@
+#!/usr/bin/env bpftrace
+/* Honeyshop: process exec events */
+tracepoint:syscalls:sys_enter_execve
+{
+  printf("exec|%d|%d|%s|%s\n", pid, uid, comm, str(args->filename));
+}

@@ -1,0 +1,16 @@
+#!/usr/bin/env bpftrace
+/* Honeyshop: sensitive file open events */
+tracepoint:syscalls:sys_enter_openat
+/str(args->filename) != ""/
+{
+  $f = str(args->filename);
+  if (
+    ($f ~= "/etc/") || ($f ~= "/root/") || ($f ~= "/home/") ||
+    ($f ~= "/var/log/") || ($f ~= "/tmp/") || ($f ~= ".ssh") ||
+    ($f ~= "id_rsa") || ($f ~= "passwd") || ($f ~= "shadow") ||
+    ($f ~= "sudoers") || ($f ~= ".env") || ($f ~= "kube") ||
+    ($f ~= "aws") || ($f ~= "credentials")
+  ) {
+    printf("open|%d|%d|%s|%s\n", pid, uid, comm, $f);
+  }
+}
