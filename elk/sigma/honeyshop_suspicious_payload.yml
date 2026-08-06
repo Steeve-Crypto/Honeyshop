@@ -1,0 +1,31 @@
+title: Honeyshop Suspicious Payload Patterns
+id: d4e5f6a7-b8c9-0123-def0-234567890123
+status: experimental
+description: Detects common exploit or scanning payloads in Honeypot captured data.
+references:
+  - https://github.com/Steeve-Crypto/Honeyshop
+author: Honeyshop
+date: 2026/08/06
+logsource:
+  product: honeyshop
+detection:
+  selection_payload:
+    honeypot.payload|contains:
+      - 'wget '
+      - 'curl '
+      - '/bin/bash'
+      - '/bin/sh'
+      - 'nc -e'
+      - 'python -c'
+      - 'base64'
+      - 'chmod +x'
+      - 'Mirai'
+      - 'BusyBox'
+  condition: selection_payload
+falsepositives:
+  - Benign research tools that probe with similar strings
+level: high
+tags:
+  - attack.execution
+  - attack.t1059
+  - honeypot
