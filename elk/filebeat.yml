@@ -1,0 +1,23 @@
+# Optional Filebeat config if you prefer Filebeat over Logstash input
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /var/log/honeyshop/honeyshop.jsonl
+    json.keys_under_root: true
+    json.add_error_key: true
+    fields:
+      log_type: honeyshop
+    fields_under_root: true
+
+processors:
+  - add_host_metadata: ~
+  - add_cloud_metadata: ~
+
+output.elasticsearch:
+  hosts: ["http://elasticsearch:9200"]
+  index: "honeyshop-%{+yyyy.MM.dd}"
+
+setup.template.name: "honeyshop"
+setup.template.pattern: "honeyshop-*"
+setup.ilm.enabled: false
