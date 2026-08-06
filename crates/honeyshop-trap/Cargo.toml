@@ -1,0 +1,13 @@
+[package]
+name = "honeyshop-trap"
+version = "0.1.0"
+edition = "2021"
+description = "High-performance multi-port trap listeners for Honeyshop (JSONL-compatible)"
+license = "MIT"
+publish = false
+
+# Zero external deps — builds on older rustc without edition2024 crates
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true

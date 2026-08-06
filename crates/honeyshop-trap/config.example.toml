@@ -1,0 +1,20 @@
+log_file = "logs/honeyshop.jsonl"
+bind = "0.0.0.0"
+max_connections = 10000
+idle_timeout_secs = 15
+read_limit = 2048
+
+[[services]]
+name = "ssh"
+port = 2222
+banner = "SSH-2.0-OpenSSH_8.9p1 Ubuntu-3ubuntu0.10\r\n"
+
+[[services]]
+name = "http"
+port = 8080
+banner = "HTTP/1.1 200 OK\r\nServer: nginx/1.24.0\r\nContent-Type: text/html\r\nContent-Length: 12\r\nConnection: close\r\n\r\nHello world\n"
+
+[[services]]
+name = "ftp"
+port = 2121
+banner = "220 (vsFTPd 3.0.5)\r\n"
