@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-label="Honeyshop logo">
+  <defs>
+    <linearGradient id="amber" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F5C16C"/>
+      <stop offset="100%" stop-color="#D4922A"/>
+    </linearGradient>
+  </defs>
+  <rect width="256" height="256" rx="48" fill="#0B1220"/>
+  <rect x="72" y="48" width="112" height="22" rx="6" fill="url(#amber)"/>
+  <path d="M64 84h128v72c0 48-32 80-64 96-32-16-64-48-64-96V84z" fill="none" stroke="url(#amber)" stroke-width="10" stroke-linejoin="round"/>
+  <g fill="url(#amber)" transform="translate(128 130)">
+    <polygon points="0,-18 15.5,-9 15.5,9 0,18 -15.5,9 -15.5,-9"/>
+    <polygon points="28,-4 43.5,5 43.5,23 28,32 12.5,23 12.5,5" opacity="0.9"/>
+    <polygon points="-28,-4 -12.5,5 -12.5,23 -28,32 -43.5,23 -43.5,5" opacity="0.9"/>
+    <polygon points="0,22 15.5,31 15.5,49 0,58 -15.5,49 -15.5,31" opacity="0.85"/>
+  </g>
+</svg>

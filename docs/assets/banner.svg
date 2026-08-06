@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 420" width="1200" height="420" role="img" aria-label="Honeyshop banner">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B1220"/>
+      <stop offset="100%" stop-color="#152238"/>
+    </linearGradient>
+    <linearGradient id="amber" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F5C16C"/>
+      <stop offset="100%" stop-color="#D4922A"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="80%" cy="30%" r="50%">
+      <stop offset="0%" stop-color="#D4922A" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#0B1220" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="420" fill="url(#bg)"/>
+  <rect width="1200" height="420" fill="url(#glow)"/>
+  <g stroke="#D4922A" stroke-width="1.5" fill="none" opacity="0.25">
+    <path d="M780 40 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M860 40 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M940 40 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M1020 40 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M820 110 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M900 110 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M980 110 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M1060 110 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M780 180 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M860 180 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M940 180 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M1020 180 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M820 250 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M900 250 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M980 250 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M780 320 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M860 320 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+    <path d="M940 320 l40 23 v46 l-40 23 l-40-23 v-46z"/>
+  </g>
+  <text x="72" y="200" font-family="Georgia, 'Times New Roman', serif" font-size="84" fill="#F5E6C8">Honeyshop</text>
+  <text x="76" y="260" font-family="system-ui, -apple-system, sans-serif" font-size="28" fill="#C9B896">Modular defensive honeypot framework</text>
+  <text x="76" y="320" font-family="system-ui, -apple-system, sans-serif" font-size="20" fill="#D4922A">Detect · Deceive · Defend</text>
+</svg>
