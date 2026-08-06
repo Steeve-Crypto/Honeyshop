@@ -1,0 +1,20 @@
+services:
+  honeyshop:
+    build: .
+    container_name: honeyshop
+    restart: unless-stopped
+    ports:
+      - "2222:2222"   # SSH honeypot
+      - "8080:8080"   # HTTP honeypot
+      - "2121:2121"   # FTP honeypot
+    volumes:
+      - ./logs:/app/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: >
+      python -m honeyshop
+      --ssh-port 2222
+      --http-port 8080
+      --ftp-port 2121
+      --log-file /app/logs/honeyshop.jsonl
+      --log-level INFO
