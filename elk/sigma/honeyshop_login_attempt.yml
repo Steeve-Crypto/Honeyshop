@@ -1,0 +1,23 @@
+title: Honeyshop Login Attempt Detected
+id: b2c3d4e5-f6a7-8901-bcde-f12345678901
+status: experimental
+description: Detects explicit login attempts (USER/PASS or credential-related events) against Honeyshop services.
+references:
+  - https://github.com/Steeve-Crypto/Honeyshop
+author: Honeyshop
+date: 2026/08/06
+logsource:
+  product: honeyshop
+detection:
+  selection:
+    honeypot.event:
+      - 'login_attempt'
+      - 'client_data'
+  condition: selection
+falsepositives:
+  - Automated internet scanners
+level: medium
+tags:
+  - attack.credential_access
+  - attack.t1110
+  - honeypot
