@@ -84,13 +84,14 @@ class BaseService(ABC):
                 pass
 
     def log_interaction(self, addr: tuple, event: str, data: str = "") -> None:
-        """Structured log helper."""
-        record = {
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "service": self.name,
-            "src_ip": addr[0],
-            "src_port": addr[1],
-            "event": event,
-            "data": data[:2048],  # truncate long payloads
-        }
-        logger.info("INTERACTION %s", record)
+        """Structured log helper that works with JSON formatter."""
+        logger.info(
+            "interaction",
+            extra={
+                "service": self.name,
+                "src_ip": addr[0],
+                "src_port": addr[1],
+                "event": event,
+                "data": data[:2048],
+            },
+        )
