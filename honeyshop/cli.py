@@ -1,22 +1,12 @@
 """Command-line interface for Honeyshop."""
 
 import argparse
-import logging
 import sys
 
 from rich.console import Console
-from rich.logging import RichHandler
 
 from .core import create_default_engine
-
-
-def setup_logging(level: str = "INFO") -> None:
-    logging.basicConfig(
-        level=getattr(logging, level.upper(), logging.INFO),
-        format="%(message)s",
-        datefmt="[%X]",
-        handlers=[RichHandler(rich_tracebacks=True, show_path=False)],
-    )
+from .logging_setup import setup_logging
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -36,15 +26,29 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--log-level", default="INFO", choices=["DEBUG", "INFO", "WARNING", "ERROR"]
     )
+    parser.add_argument(
+        "--log-file",
+        default="logs/honeyshop.jsonl",
+        help="JSONL log file path (default: logs/honeyshop.jsonl)",
+    )
+    parser.add_argument(
+        "--no-log-file",
+        action="store_true",
+        help="Disable file logging",
+    )
 
     args = parser.parse_args(argv)
-    setup_logging(args.log_level)
+
+    log_file = None if args.no_log_file else args.log_file
+    setup_logging(level=args.log_level, log_file=log_file)
 
     console = Console()
     console.print("[bold green]Honeyshop[/] – defensive honeypot framework")
     console.print(
         f"Starting services → SSH:{args.ssh_port}  HTTP:{args.http_port}  FTP:{args.ftp_port}"
     )
+    if log_file:
+        console.print(f"[dim]Logging interactions to {log_file}[/]")
     console.print("[dim]Press Ctrl+C to stop[/]\n")
 
     engine = create_default_engine(
