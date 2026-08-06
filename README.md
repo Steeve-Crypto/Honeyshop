@@ -8,7 +8,7 @@ Modular defensive honeypot framework.
 - Pluggable architecture
 - Structured JSONL logging
 - Docker & docker-compose support
-- Optional **ELK Stack** integration for analysis
+- Optional **ELK Stack** integration + ready Kibana dashboard
 
 ## Quick Start (local)
 
@@ -62,13 +62,22 @@ docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
 | Elasticsearch  | http://localhost:9200   |
 | Kibana         | http://localhost:5601   |
 
-### First-time Kibana setup
+### Import the Honeyshop Dashboard
 
 1. Open http://localhost:5601
-2. Go to **Stack Management → Data Views**
-3. Create a data view with index pattern: `honeyshop-*`
-4. Time field: `@timestamp`
-5. Explore in **Discover** or build dashboards
+2. Go to **Stack Management → Saved Objects**
+3. Click **Import**
+4. Select `elk/dashboards/honeyshop-dashboard.ndjson`
+5. Open **Dashboard → Honeyshop Overview**
+
+The dashboard includes:
+- Interactions over time
+- Breakdown by service (SSH / HTTP / FTP)
+- Event type distribution
+- Top source IPs
+- Recent interactions table
+
+See `elk/dashboards/README.md` for manual setup instructions if the import fails.
 
 ### Log fields available in Elasticsearch
 
@@ -100,8 +109,11 @@ honeyshop/
     └── ftp.py
 
 elk/
-├── logstash.conf      # Logstash pipeline
-└── filebeat.yml       # Optional Filebeat config
+├── logstash.conf
+├── filebeat.yml
+└── dashboards/
+    ├── honeyshop-dashboard.ndjson
+    └── README.md
 ```
 
 ## Safety
