@@ -1,0 +1,16 @@
+# Honeyshop default configuration
+
+services:
+  ssh:
+    enabled: true
+    port: 2222
+  http:
+    enabled: true
+    port: 8080
+  ftp:
+    enabled: true
+    port: 2121
+
+logging:
+  level: INFO
+  format: json
