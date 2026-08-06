@@ -1,0 +1,23 @@
+title: Honeyshop SSH Brute Force Attempt
+id: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+status: experimental
+description: Detects multiple SSH interactions from the same source IP against the Honeyshop SSH honeypot, indicating possible brute force.
+references:
+  - https://github.com/Steeve-Crypto/Honeyshop
+author: Honeyshop
+date: 2026/08/06
+logsource:
+  product: honeyshop
+  service: ssh
+detection:
+  selection:
+    honeypot.service: 'ssh'
+  condition: selection
+falsepositives:
+  - Legitimate scanners performing research
+  - Security teams testing the honeypot
+level: medium
+tags:
+  - attack.credential_access
+  - attack.t1110
+  - honeypot
