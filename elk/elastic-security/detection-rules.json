@@ -1,0 +1,67 @@
+{
+  "comment": "Reference detection rule definitions for Elastic Security (Detection Engine). Create equivalent rules in the Kibana UI under Security → Rules. Field names match Honeyshop ECS-ish mapping from Logstash.",
+  "rules": [
+    {
+      "name": "Honeyshop - High Volume Source IP",
+      "description": "Single source IP generating high interaction volume against Honeyshop (possible scan/brute force).",
+      "type": "threshold",
+      "index": ["honeyshop-*"],
+      "query": "honeypot.service: *",
+      "language": "kuery",
+      "threshold": {
+        "field": ["source.ip"],
+        "value": 20,
+        "cardinality": []
+      },
+      "from": "now-5m",
+      "interval": "1m",
+      "severity": "medium",
+      "risk_score": 47,
+      "tags": ["honeyshop", "T1046", "T1110"]
+    },
+    {
+      "name": "Honeyshop - Login Attempts",
+      "description": "Login attempts or concentrated SSH activity against Honeyshop.",
+      "type": "query",
+      "index": ["honeyshop-*"],
+      "query": "honeypot.event: \"login_attempt\" or honeypot.service: \"ssh\"",
+      "language": "kuery",
+      "from": "now-10m",
+      "interval": "2m",
+      "severity": "medium",
+      "risk_score": 47,
+      "tags": ["honeyshop", "T1110"]
+    },
+    {
+      "name": "Honeyshop - Suspicious Payload",
+      "description": "Common exploit or malware payload patterns in honeypot captures.",
+      "type": "query",
+      "index": ["honeyshop-*"],
+      "query": "honeypot.payload: (*wget* or *curl* or *\"/bin/bash\"* or *\"/bin/sh\"* or *\"nc -e\"* or *\"python -c\"* or *base64* or *\"chmod +x\"* or *Mirai* or *BusyBox*)",
+      "language": "kuery",
+      "from": "now-5m",
+      "interval": "1m",
+      "severity": "high",
+      "risk_score": 73,
+      "tags": ["honeyshop", "T1059", "malware"]
+    },
+    {
+      "name": "Honeyshop - Service Spike",
+      "description": "Unusual volume against a single honeypot service.",
+      "type": "threshold",
+      "index": ["honeyshop-*"],
+      "query": "honeypot.service: *",
+      "language": "kuery",
+      "threshold": {
+        "field": ["honeypot.service"],
+        "value": 50,
+        "cardinality": []
+      },
+      "from": "now-5m",
+      "interval": "1m",
+      "severity": "low",
+      "risk_score": 21,
+      "tags": ["honeyshop", "volume"]
+    }
+  ]
+}
