@@ -8,8 +8,10 @@ Modular defensive honeypot framework.
 - Pluggable architecture
 - Structured JSONL logging
 - Docker & docker-compose support
-- Optional **ELK Stack** integration + Kibana dashboard
-- **Alerting rules** + Sigma rules
+- Optional **ELK Stack** + Kibana dashboard
+- **Alerting** + Sigma rules
+- **Elastic Security** detection rule guidance
+- **Elastic Agent** deployment options
 
 ## Quick Start (local)
 
@@ -37,23 +39,11 @@ python -m honeyshop --log-level DEBUG
 docker compose up -d --build
 ```
 
-View logs:
-```bash
-docker compose logs -f
-tail -f logs/honeyshop.jsonl
-```
-
 ## ELK Stack Integration
-
-Honeyshop can ship its JSONL logs into Elasticsearch via Logstash for analysis in Kibana.
-
-### Start full stack (Honeyshop + ELK)
 
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
 ```
-
-### Access
 
 | Service        | URL / Port              |
 |----------------|-------------------------|
@@ -63,74 +53,44 @@ docker compose -f docker-compose.yml -f docker-compose.elk.yml up -d --build
 | Elasticsearch  | http://localhost:9200   |
 | Kibana         | http://localhost:5601   |
 
-### Import the Honeyshop Dashboard
+### Dashboard
 
-1. Open http://localhost:5601
-2. Go to **Stack Management → Saved Objects**
-3. Click **Import**
-4. Select `elk/dashboards/honeyshop-dashboard.ndjson`
-5. Open **Dashboard → Honeyshop Overview**
+Import `elk/dashboards/honeyshop-dashboard.ndjson` via  
+**Stack Management → Saved Objects → Import**.
 
-See `elk/dashboards/README.md` for manual setup if needed.
+### Alerting & Sigma
 
-### Alerting Rules
+- Kibana threshold/query rules: `elk/alerts/`
+- Sigma rules: `elk/sigma/`
 
-Ready-to-use guidance and Sigma rules are in `elk/alerts/` and `elk/sigma/`.
+### Elastic Security
 
-**Recommended Kibana threshold / query rules:**
+Convert/import Sigma-style detections into the Detection Engine:
 
-| Rule                        | Condition                          | Window |
-|-----------------------------|------------------------------------|--------|
-| High Volume Source IP       | same `source.ip` ≥ 20 events       | 5 min  |
-| Login Attempts              | `login_attempt` or SSH activity ≥ 5| 10 min |
-| Suspicious Payload          | wget/curl/bash/Mirai/etc. patterns | 5 min  |
-| Service Spike               | any service ≥ 50 events            | 5 min  |
+- Guide: `elk/elastic-security/README.md`
+- Rule reference: `elk/elastic-security/detection-rules.json`
 
-Full instructions, KQL queries, and Sigma YAML files:
+### Elastic Agent
 
-- `elk/alerts/README.md`
-- `elk/alerts/kibana-rules-examples.json`
-- `elk/sigma/*.yml`
+Ship Honeyshop logs via Fleet-managed Elastic Agent (alternative or complement to Logstash):
 
-### Log fields available in Elasticsearch
-
-| Field               | Description                  |
-|---------------------|------------------------------|
-| `@timestamp`        | Event time                   |
-| `source.ip`         | Attacker IP                  |
-| `source.port`       | Source port                  |
-| `honeypot.service`  | Service hit (ssh/http/ftp)   |
-| `honeypot.event`    | Event type                   |
-| `honeypot.payload`  | Captured data / payload      |
-| `geoip.*`           | GeoIP enrichment (if enabled)|
+- Guide: `elk/elastic-agent/README.md`
+- Sample compose: `elk/elastic-agent/docker-compose.agent.yml`
 
 ## Architecture
 
 ```
 honeyshop/
-├── core.py
-├── cli.py
-├── logging_setup.py
-└── services/
-    ├── base.py
-    ├── ssh.py
-    ├── http.py
-    └── ftp.py
+├── core.py, cli.py, logging_setup.py
+└── services/ (ssh, http, ftp)
 
 elk/
-├── logstash.conf
-├── filebeat.yml
+├── logstash.conf / filebeat.yml
 ├── dashboards/
-│   ├── honeyshop-dashboard.ndjson
-│   └── README.md
 ├── alerts/
-│   ├── README.md
-│   └── kibana-rules-examples.json
-└── sigma/
-    ├── honeyshop_ssh_bruteforce.yml
-    ├── honeyshop_login_attempt.yml
-    ├── honeyshop_high_volume_ip.yml
-    └── honeyshop_suspicious_payload.yml
+├── sigma/
+├── elastic-security/     # Detection Engine integration
+└── elastic-agent/        # Fleet / Agent deployment
 ```
 
 ## Safety
