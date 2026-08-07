@@ -21,8 +21,8 @@ class JSONFormatter(logging.Formatter):
             "message": record.getMessage(),
         }
 
-        # Attach extra fields if present
-        for key in ("service", "src_ip", "src_port", "event", "data"):
+        # Attach extra fields if present (optional: decoy, trap)
+        for key in ("service", "src_ip", "src_port", "event", "data", "decoy", "trap"):
             if hasattr(record, key):
                 payload[key] = getattr(record, key)
 
