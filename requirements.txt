@@ -3,8 +3,8 @@ pydantic>=2.0
 pyyaml>=6.0
 rich>=13.0
 
-# Async networking (for future expansion)
-# asyncio is stdlib
+# WebSocket live feed (python -m honeyshop.stream)
+websockets>=12.0
 
 # Optional
 # docker>=7.0
