@@ -1,0 +1,180 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { demoInteractions } from "../lib/data";
+---
+
+<BaseLayout title="Live Feed" active="live">
+  <div class="page-head">
+    <div>
+      <h1>Live Feed</h1>
+      <p>WebSocket stream with HTTP poll fallback · same JSONL schema.</p>
+    </div>
+    <div class="badge-row" id="live-badges">
+      <span class="badge off"><span class="dot"></span> WS …</span>
+      <span class="badge off"><span class="dot"></span> API …</span>
+      <span class="badge off"><span class="dot"></span> Mode …</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;margin-bottom:0.75rem">
+      <h2 style="margin:0">Interactions</h2>
+      <div class="btn-row">
+        <button type="button" class="secondary" id="btn-clear">Clear view</button>
+        <button type="button" id="btn-poll">Poll now</button>
+      </div>
+    </div>
+    <div class="feed" id="feed">
+      {demoInteractions.map((row) => (
+        <div class="feed-item">
+          <div class="meta">
+            <span class={`pill ${row.service}`}>{row.service}</span>
+            <span>{row.src_ip}:{row.src_port}</span>
+            <span>{row.event}</span>
+            <span>{new Date(row.timestamp).toLocaleTimeString()}</span>
+          </div>
+          <div class="data">{row.data || "—"}</div>
+        </div>
+      ))}
+    </div>
+    <p class="note" id="feed-note" style="margin-top:0.75rem">Showing demo rows until stream or API connects.</p>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    API_BASE,
+    WS_URL,
+    formatTime,
+    getFeatures,
+    getInteractions,
+    type Interaction,
+  } from "../lib/data";
+
+  const feed = document.getElementById("feed")!;
+  const note = document.getElementById("feed-note")!;
+  const badges = document.getElementById("live-badges")!;
+  let items: Interaction[] = [];
+  let mode = "demo";
+  let wsUp = false;
+  let apiUp = false;
+  let ws: WebSocket | null = null;
+
+  function renderBadges() {
+    const modeCls = mode === "ws" ? "on" : mode === "poll" ? "warn" : "off";
+    badges.innerHTML = `
+      <span class="badge ${wsUp ? "on" : "off"}"><span class="dot"></span> WS ${wsUp ? "up" : "down"}</span>
+      <span class="badge ${apiUp ? "on" : "off"}"><span class="dot"></span> API ${apiUp ? "up" : "down"}</span>
+      <span class="badge ${modeCls}"><span class="dot"></span> Mode ${mode}</span>
+    `;
+  }
+
+  function rowHtml(row: Interaction) {
+    const tags = [
+      row.decoy ? '<span class="pill medium">decoy</span>' : "",
+      row.trap ? `<span class="pill low">${row.trap}</span>` : "",
+    ]
+      .filter(Boolean)
+      .join(" ");
+    return `<div class="feed-item">
+      <div class="meta">
+        <span class="pill ${row.service}">${row.service}</span>
+        <span>${row.src_ip}:${row.src_port}</span>
+        <span>${row.event}</span>
+        <span>${formatTime(row.timestamp)}</span>
+        ${tags}
+      </div>
+      <div class="data">${row.data || "—"}</div>
+    </div>`;
+  }
+
+  function renderFeed() {
+    feed.innerHTML = items.slice(0, 120).map(rowHtml).join("") ||
+      `<p class="muted">No interactions yet.</p>`;
+  }
+
+  function pushItem(row: Interaction) {
+    items = [row, ...items].slice(0, 200);
+    renderFeed();
+  }
+
+  async function poll() {
+    const data = await getInteractions(80);
+    if (!data) {
+      apiUp = false;
+      renderBadges();
+      return;
+    }
+    apiUp = true;
+    if (mode !== "ws") {
+      mode = "poll";
+      items = data.items || [];
+      renderFeed();
+      note.textContent = `Polling ${API_BASE}/api/interactions`;
+    }
+    renderBadges();
+  }
+
+  function connectWs() {
+    try {
+      ws = new WebSocket(WS_URL);
+    } catch {
+      wsUp = false;
+      mode = "poll";
+      renderBadges();
+      return;
+    }
+    ws.onopen = () => {
+      wsUp = true;
+      mode = "ws";
+      note.textContent = `Streaming ${WS_URL}`;
+      renderBadges();
+    };
+    ws.onclose = () => {
+      wsUp = false;
+      if (mode === "ws") mode = "poll";
+      renderBadges();
+      setTimeout(connectWs, 4000);
+    };
+    ws.onerror = () => {
+      wsUp = false;
+      renderBadges();
+    };
+    ws.onmessage = (ev) => {
+      try {
+        const msg = JSON.parse(ev.data);
+        if (msg.type === "snapshot" && Array.isArray(msg.items)) {
+          items = msg.items;
+          renderFeed();
+          mode = "ws";
+          note.textContent = `Streaming ${WS_URL}`;
+        } else if (msg.type === "event" && msg.item) {
+          pushItem(msg.item);
+        }
+        renderBadges();
+      } catch {
+        /* ignore */
+      }
+    };
+  }
+
+  document.getElementById("btn-clear")?.addEventListener("click", () => {
+    items = [];
+    renderFeed();
+  });
+  document.getElementById("btn-poll")?.addEventListener("click", () => poll());
+
+  (async () => {
+    const f = await getFeatures();
+    if (f) {
+      apiUp = true;
+      wsUp = !!f.stream?.up;
+    }
+    renderBadges();
+    connectWs();
+    await poll();
+    setInterval(() => {
+      if (mode !== "ws") poll();
+    }, 5000);
+  })();
+</script>

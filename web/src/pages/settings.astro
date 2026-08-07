@@ -1,0 +1,270 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout title="Settings" active="settings">
+  <div class="page-head">
+    <div>
+      <h1>Settings</h1>
+      <p>Control plane — features, decoy, alerts. eBPF stays CLI-only.</p>
+    </div>
+    <div class="badge-row" id="settings-badges">
+      <span class="badge off"><span class="dot"></span> Loading …</span>
+    </div>
+  </div>
+
+  <div class="grid two">
+    <div class="card">
+      <h2>Feature matrix</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Status</th>
+              <th>Control</th>
+            </tr>
+          </thead>
+          <tbody id="feature-matrix">
+            <tr><td colspan="3" class="muted">Connecting to API…</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="note" style="margin-top:0.75rem" id="ebpf-note">
+        eBPF: status only. Enable with <code>sudo python -m honeyshop --ebpf</code>
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>Decoy noise</h2>
+      <p class="note">Fake auth/app logs + optional JSONL noise. Controllable from API.</p>
+      <div class="btn-row" style="margin-top:0.85rem">
+        <button type="button" id="btn-start-decoy">Start decoy</button>
+        <button type="button" class="secondary" id="btn-stop-decoy">Stop decoy</button>
+      </div>
+      <div class="toast" id="decoy-toast"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h2>Alert channels</h2>
+    <form id="config-form">
+      <div class="form-grid">
+        <div class="full">
+          <label for="slack_webhook">Slack webhook URL</label>
+          <input id="slack_webhook" name="slack_webhook" type="url" placeholder="https://hooks.slack.com/services/…" autocomplete="off" />
+        </div>
+        <div>
+          <label for="smtp_host">SMTP host</label>
+          <input id="smtp_host" name="smtp_host" type="text" placeholder="smtp.example.com" />
+        </div>
+        <div>
+          <label for="smtp_port">SMTP port</label>
+          <input id="smtp_port" name="smtp_port" type="number" value="587" />
+        </div>
+        <div>
+          <label for="smtp_user">SMTP user</label>
+          <input id="smtp_user" name="smtp_user" type="text" autocomplete="off" />
+        </div>
+        <div>
+          <label for="smtp_password">SMTP password</label>
+          <input id="smtp_password" name="smtp_password" type="password" placeholder="unchanged if masked" autocomplete="off" />
+        </div>
+        <div>
+          <label for="email_from">Email from</label>
+          <input id="email_from" name="email_from" type="email" />
+        </div>
+        <div>
+          <label for="email_to">Email to</label>
+          <input id="email_to" name="email_to" type="email" />
+        </div>
+      </div>
+      <div class="btn-row">
+        <button type="submit">Save config</button>
+        <button type="button" class="secondary" id="btn-test-alert">Test alert</button>
+      </div>
+      <div class="toast" id="config-toast"></div>
+    </form>
+    <p class="note" style="margin-top:0.85rem">
+      Secrets are stored in <code>config/runtime.json</code> for this API process and exported to env.
+      Prefer env vars from <code>config/alerts.example.env</code> in production.
+    </p>
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h2>External processes</h2>
+    <ul class="limit-list">
+      <li>Engine: <code>python -m honeyshop</code> → service ports</li>
+      <li>API: <code>python -m honeyshop.api_server</code> → <code>:8787</code></li>
+      <li>Stream: <code>python -m honeyshop.stream</code> → <code>:8788 /ws/interactions</code></li>
+      <li>UI: <code>cd web &amp;&amp; npm run dev</code> → <code>:4321</code></li>
+      <li>Optional trap: Rust <code>honeyshop-trap</code> (not started here)</li>
+    </ul>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    API_BASE,
+    controlAction,
+    getConfig,
+    getFeatures,
+    saveConfig,
+  } from "../lib/data";
+
+  const matrix = document.getElementById("feature-matrix")!;
+  const badges = document.getElementById("settings-badges")!;
+  const decoyToast = document.getElementById("decoy-toast")!;
+  const configToast = document.getElementById("config-toast")!;
+  const ebpfNote = document.getElementById("ebpf-note")!;
+
+  function showToast(el: HTMLElement, ok: boolean, msg: string) {
+    el.className = `toast show ${ok ? "ok" : "err"}`;
+    el.textContent = msg;
+  }
+
+  function fillConfig(cfg: any) {
+    if (!cfg) return;
+    const set = (id: string, val: unknown) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      if (!el || val == null || val === "") return;
+      // Don't put masked secrets back as editable values that would re-save
+      if (typeof val === "string" && (val.includes("…") || val.includes("••••"))) {
+        el.placeholder = String(val) + " (saved)";
+        el.value = "";
+        return;
+      }
+      el.value = String(val);
+    };
+    set("slack_webhook", cfg.slack_webhook);
+    set("smtp_host", cfg.smtp_host);
+    set("smtp_port", cfg.smtp_port ?? 587);
+    set("smtp_user", cfg.smtp_user);
+    set("email_from", cfg.email_from);
+    set("email_to", cfg.email_to);
+    if (cfg.smtp_password) {
+      const el = document.getElementById("smtp_password") as HTMLInputElement;
+      if (el) {
+        el.placeholder = "•••••••• (saved — leave blank to keep)";
+        el.value = "";
+      }
+    }
+  }
+
+  function renderFeatures(f: any) {
+    if (!f) {
+      badges.innerHTML = `<span class="badge off"><span class="dot"></span> API down</span>`;
+      matrix.innerHTML = `<tr><td colspan="3" class="muted">API offline (${API_BASE}). Start: python -m honeyshop.api_server</td></tr>`;
+      return;
+    }
+    badges.innerHTML = [
+      `<span class="badge on"><span class="dot"></span> API up</span>`,
+      `<span class="badge ${f.stream?.up ? "on" : "off"}"><span class="dot"></span> Stream</span>`,
+      `<span class="badge ${f.decoy?.running ? "on" : "off"}"><span class="dot"></span> Decoy</span>`,
+      `<span class="badge ${f.alerts?.enabled ? "on" : "off"}"><span class="dot"></span> Alerts</span>`,
+      `<span class="badge ${f.ebpf?.available ? "on" : "warn"}"><span class="dot"></span> eBPF</span>`,
+    ].join("");
+
+    const rows = [
+      ["API control plane", "up", "this page"],
+      [
+        "WebSocket stream",
+        f.stream?.up ? "up" : "down",
+        f.stream?.cli || "python -m honeyshop.stream",
+      ],
+      [
+        "Engine listeners",
+        f.engine?.listeners_up ? "up" : "down",
+        f.engine?.cli || "python -m honeyshop",
+      ],
+      [
+        "Decoy generator",
+        f.decoy?.running ? "running" : "stopped",
+        "start/stop buttons",
+      ],
+      [
+        "Slack alerts",
+        f.alerts?.slack ? "configured" : "off",
+        "form below",
+      ],
+      [
+        "Email alerts",
+        f.alerts?.email ? "configured" : "off",
+        "form below",
+      ],
+      [
+        "eBPF host watch",
+        f.ebpf?.available ? "available" : f.ebpf?.reason || "unavailable",
+        "CLI only (no UI toggle)",
+      ],
+    ];
+    matrix.innerHTML = rows
+      .map(
+        ([name, status, control]) =>
+          `<tr><td>${name}</td><td>${status}</td><td class="muted">${control}</td></tr>`,
+      )
+      .join("");
+
+    if (f.ebpf) {
+      ebpfNote.innerHTML = `eBPF: <strong>${
+        f.ebpf.available ? "available" : "not available"
+      }</strong> — ${f.ebpf.reason || ""}. ${
+        f.ebpf.note || ""
+      } CLI: <code>${f.ebpf.cli || "sudo python -m honeyshop --ebpf"}</code>`;
+    }
+  }
+
+  async function refresh() {
+    const [features, config] = await Promise.all([getFeatures(), getConfig()]);
+    renderFeatures(features);
+    fillConfig(config);
+  }
+
+  document.getElementById("btn-start-decoy")?.addEventListener("click", async () => {
+    const res = await controlAction("start_decoy");
+    if (!res) return showToast(decoyToast, false, "API unreachable");
+    showToast(decoyToast, !!res.ok, String(res.message || (res.ok ? "Decoy started" : res.error || "failed")));
+    refresh();
+  });
+
+  document.getElementById("btn-stop-decoy")?.addEventListener("click", async () => {
+    const res = await controlAction("stop_decoy");
+    if (!res) return showToast(decoyToast, false, "API unreachable");
+    showToast(decoyToast, !!res.ok, String(res.message || (res.ok ? "Decoy stopped" : res.error || "failed")));
+    refresh();
+  });
+
+  document.getElementById("btn-test-alert")?.addEventListener("click", async () => {
+    const res = await controlAction("test_alert");
+    if (!res) return showToast(configToast, false, "API unreachable");
+    showToast(
+      configToast,
+      !!res.ok,
+      res.ok ? "Test alert sent" : String(res.error || "test failed"),
+    );
+  });
+
+  document.getElementById("config-form")?.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const fd = new FormData(ev.target as HTMLFormElement);
+    const body: Record<string, unknown> = {};
+    for (const [k, v] of fd.entries()) {
+      const s = String(v).trim();
+      if (!s) continue;
+      body[k] = k === "smtp_port" ? Number(s) : s;
+    }
+    const res = await saveConfig(body);
+    if (!res) return showToast(configToast, false, "API unreachable");
+    showToast(
+      configToast,
+      !!res.ok,
+      res.ok
+        ? `Saved: ${(res.changed || []).join(", ") || "no changes"}`
+        : String(res.error || "save failed"),
+    );
+    refresh();
+  });
+
+  refresh();
+  setInterval(refresh, 10000);
+</script>

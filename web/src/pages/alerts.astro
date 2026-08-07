@@ -1,0 +1,72 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { demoAlerts } from "../lib/data";
+---
+
+<BaseLayout title="Alerts" active="alerts">
+  <div class="page-head">
+    <div>
+      <h1>Alerts</h1>
+      <p>Derived from JSONL (payloads, logins, volume, eBPF events).</p>
+    </div>
+    <div class="badge-row" id="alert-badges">
+      <span class="badge off"><span class="dot"></span> Channels …</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Detection feed</h2>
+    <div id="alerts">
+      {demoAlerts.map((a) => (
+        <div class="feed-item" style="margin-bottom:0.5rem">
+          <div class="meta">
+            <span class={`pill ${a.severity}`}>{a.severity}</span>
+            <strong style="color:var(--cream)">{a.title}</strong>
+            <span>{a.time}</span>
+          </div>
+          <div class="data">{a.detail}</div>
+        </div>
+      ))}
+    </div>
+    <p class="note" style="margin-top:0.75rem">
+      Configure Slack / email on <a href="/settings" style="color:var(--gold)">Settings</a>, then use <strong>Test alert</strong>.
+    </p>
+  </div>
+</BaseLayout>
+
+<script>
+  import { formatTime, getAlerts, getFeatures } from "../lib/data";
+
+  async function refresh() {
+    const [alerts, features] = await Promise.all([getAlerts(), getFeatures()]);
+    const badge = document.getElementById("alert-badges");
+    if (badge && features) {
+      const on = !!features.alerts?.enabled;
+      const parts = [
+        features.alerts?.slack ? "Slack" : null,
+        features.alerts?.email ? "email" : null,
+      ].filter(Boolean);
+      badge.innerHTML = `<span class="badge ${on ? "on" : "off"}"><span class="dot"></span> Channels ${
+        on ? parts.join(" + ") : "none"
+      }</span>`;
+    }
+    if (!alerts?.items?.length) return;
+    const root = document.getElementById("alerts");
+    if (!root) return;
+    root.innerHTML = alerts.items
+      .map(
+        (a) => `<div class="feed-item" style="margin-bottom:0.5rem">
+        <div class="meta">
+          <span class="pill ${a.severity}">${a.severity}</span>
+          <strong style="color:var(--cream)">${a.title}</strong>
+          <span>${a.time ? formatTime(a.time) : ""}</span>
+        </div>
+        <div class="data">${a.detail}</div>
+      </div>`,
+      )
+      .join("");
+  }
+
+  refresh();
+  setInterval(refresh, 8000);
+</script>

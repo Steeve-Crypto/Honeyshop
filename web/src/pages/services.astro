@@ -1,0 +1,56 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { demoServices } from "../lib/data";
+---
+
+<BaseLayout title="Services" active="services">
+  <div class="page-head">
+    <div>
+      <h1>Services</h1>
+      <p>Listener status by port probe · engine or Rust trap owns the bind.</p>
+    </div>
+  </div>
+
+  <div class="grid three" id="service-cards">
+    {demoServices.map((s) => (
+      <div class="card">
+        <h3>{s.name.toUpperCase()}</h3>
+        <div class="stat-value">{s.port}</div>
+        <div class="stat-label">{s.enabled ? "listening" : "down"} · {s.hits} hits</div>
+      </div>
+    ))}
+  </div>
+
+  <div class="card" style="margin-top:1rem">
+    <h2>How to start listeners</h2>
+    <p class="note">
+      Ports are not started from the browser. Use the host process:
+    </p>
+    <pre style="margin:0.75rem 0 0;padding:0.85rem;background:var(--obsidian);border-radius:10px;border:1px solid var(--panel-border);color:var(--cream);font-family:var(--mono);font-size:0.82rem;overflow:auto"><code>python -m honeyshop --ssh-port 2222 --http-port 8080 --ftp-port 2121
+# or Rust trap (same JSONL, trap:"rust")
+cargo run --release -p honeyshop-trap -- crates/honeyshop-trap/config.example.toml</code></pre>
+  </div>
+</BaseLayout>
+
+<script>
+  import { getServices } from "../lib/data";
+
+  async function refresh() {
+    const data = await getServices();
+    if (!data?.items?.length) return;
+    const root = document.getElementById("service-cards");
+    if (!root) return;
+    root.innerHTML = data.items
+      .map(
+        (s) => `<div class="card">
+        <h3>${s.name.toUpperCase()}</h3>
+        <div class="stat-value">${s.port}</div>
+        <div class="stat-label">${s.enabled ? "listening" : "down"} · ${s.hits} hits</div>
+      </div>`,
+      )
+      .join("");
+  }
+
+  refresh();
+  setInterval(refresh, 6000);
+</script>

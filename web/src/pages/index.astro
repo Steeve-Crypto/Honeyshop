@@ -1,0 +1,189 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { demoAlerts, demoInteractions, demoServices, summarize } from "../lib/data";
+
+const demo = summarize(demoInteractions);
+---
+
+<BaseLayout title="Overview" active="overview">
+  <div class="page-head">
+    <div>
+      <h1>Overview</h1>
+      <p>Detect · Deceive · Defend — live surface from API + JSONL.</p>
+    </div>
+    <div class="badge-row" id="feature-badges">
+      <span class="badge off"><span class="dot"></span> API …</span>
+      <span class="badge off"><span class="dot"></span> Stream …</span>
+      <span class="badge off"><span class="dot"></span> Listeners …</span>
+      <span class="badge off"><span class="dot"></span> Decoy …</span>
+      <span class="badge off"><span class="dot"></span> Alerts …</span>
+      <span class="badge off"><span class="dot"></span> eBPF …</span>
+    </div>
+  </div>
+
+  <div class="grid stats" id="stats">
+    <div class="card">
+      <div class="stat-value" id="stat-hits">{demo.total}</div>
+      <div class="stat-label">Recent interactions</div>
+    </div>
+    <div class="card">
+      <div class="stat-value" id="stat-sources">{demo.topIps.length}</div>
+      <div class="stat-label">Unique sources</div>
+    </div>
+    <div class="card">
+      <div class="stat-value" id="stat-services">{demoServices.filter((s) => s.enabled).length}</div>
+      <div class="stat-label">Listeners up</div>
+    </div>
+    <div class="card">
+      <div class="stat-value" id="stat-alerts">{demoAlerts.length}</div>
+      <div class="stat-label">Active alerts</div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top: 1rem">
+    <div class="card">
+      <h2>Recent interactions</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Service</th>
+              <th>Source</th>
+              <th>Event</th>
+            </tr>
+          </thead>
+          <tbody id="recent-body">
+            {demoInteractions.slice(0, 8).map((row) => (
+              <tr>
+                <td>{new Date(row.timestamp).toLocaleTimeString()}</td>
+                <td><span class={`pill ${row.service}`}>{row.service}</span></td>
+                <td>{row.src_ip}:{row.src_port}</td>
+                <td>{row.event}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p class="note" id="data-mode" style="margin-top: 0.75rem">Demo data until API connects.</p>
+    </div>
+
+    <div class="card">
+      <h2>Alerts</h2>
+      <div id="alert-list">
+        {demoAlerts.slice(0, 5).map((a) => (
+          <div class="feed-item" style="margin-bottom: 0.45rem">
+            <div class="meta">
+              <span class={`pill ${a.severity}`}>{a.severity}</span>
+              <strong style="color: var(--cream)">{a.title}</strong>
+            </div>
+            <div class="data muted">{a.detail}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top: 1rem">
+    <h2>Honest limits</h2>
+    <ul class="limit-list" id="limits">
+      <li>eBPF requires root + bpftrace on the engine process</li>
+      <li>Binding privileged/service ports is host process only</li>
+      <li>ELK deploy is separate (compose override)</li>
+    </ul>
+  </div>
+</BaseLayout>
+
+<script>
+  import {
+    API_BASE,
+    formatTime,
+    getFeatures,
+    getOverview,
+  } from "../lib/data";
+
+  function badge(label: string, on: boolean | undefined, warn = false) {
+    const cls = on ? "on" : warn ? "warn" : "off";
+    const state = on ? "up" : warn ? "limited" : "down";
+    return `<span class="badge ${cls}"><span class="dot"></span> ${label} ${state}</span>`;
+  }
+
+  function renderFeatures(f: any) {
+    const el = document.getElementById("feature-badges");
+    if (!el) return;
+    el.innerHTML = [
+      badge("API", !!f?.api),
+      badge("Stream", !!f?.stream?.up),
+      badge("Listeners", !!f?.engine?.listeners_up),
+      badge("Decoy", !!f?.decoy?.running),
+      badge("Alerts", !!f?.alerts?.enabled),
+      badge("eBPF", !!f?.ebpf?.available, !f?.ebpf?.available),
+    ].join("");
+    const limits = document.getElementById("limits");
+    if (limits && Array.isArray(f?.limits) && f.limits.length) {
+      limits.innerHTML = f.limits.map((x: string) => `<li>${x}</li>`).join("");
+    }
+  }
+
+  async function refresh() {
+    const overview = await getOverview();
+    const features = overview?.features || (await getFeatures());
+    if (!overview && !features) {
+      renderFeatures({ api: false, stream: { up: false }, engine: { listeners_up: false } });
+      const mode = document.getElementById("data-mode");
+      if (mode) mode.textContent = `Demo mode — API offline (${API_BASE})`;
+      return;
+    }
+    if (features) renderFeatures({ ...features, api: true });
+
+    if (!overview) return;
+    const hits = document.getElementById("stat-hits");
+    const sources = document.getElementById("stat-sources");
+    const services = document.getElementById("stat-services");
+    const alerts = document.getElementById("stat-alerts");
+    if (hits) hits.textContent = String(overview.total_hits ?? overview.recent?.length ?? 0);
+    if (sources) sources.textContent = String(overview.unique_sources ?? 0);
+    if (services)
+      services.textContent = String(
+        (overview.services || []).filter((s) => s.enabled).length,
+      );
+    if (alerts) alerts.textContent = String((overview.alerts || []).length);
+
+    const body = document.getElementById("recent-body");
+    if (body && overview.recent?.length) {
+      body.innerHTML = overview.recent
+        .slice(0, 10)
+        .map(
+          (row) => `<tr>
+            <td>${formatTime(row.timestamp)}</td>
+            <td><span class="pill ${row.service}">${row.service}</span></td>
+            <td>${row.src_ip}:${row.src_port}</td>
+            <td>${row.event}${row.decoy ? " · decoy" : ""}${row.trap ? " · " + row.trap : ""}</td>
+          </tr>`,
+        )
+        .join("");
+    }
+
+    const alertList = document.getElementById("alert-list");
+    if (alertList && overview.alerts?.length) {
+      alertList.innerHTML = overview.alerts
+        .slice(0, 6)
+        .map(
+          (a) => `<div class="feed-item" style="margin-bottom:0.45rem">
+            <div class="meta">
+              <span class="pill ${a.severity}">${a.severity}</span>
+              <strong style="color:var(--cream)">${a.title}</strong>
+            </div>
+            <div class="data muted">${a.detail}</div>
+          </div>`,
+        )
+        .join("");
+    }
+
+    const mode = document.getElementById("data-mode");
+    if (mode) mode.textContent = `Live from ${API_BASE}`;
+  }
+
+  refresh();
+  setInterval(refresh, 8000);
+</script>
